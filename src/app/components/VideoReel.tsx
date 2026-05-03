@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router';
+import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
 import { useApp } from './AppContext';
 import { useT, getQuestions } from './i18n';
 import { motion, AnimatePresence } from 'motion/react';
@@ -297,6 +297,7 @@ const CAPTIONS: Record<string, string[]> = {
 
 export default function VideoReel() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { region } = useParams();
   const [params] = useSearchParams();
   const category = params.get('category');
@@ -371,13 +372,17 @@ export default function VideoReel() {
     astana: 'kazakhstan',
   };
   const globeRegion = region ? (CITY_TO_COUNTRY[region] ?? region) : null;
+  const fromGlobeState = (location.state as { from?: string; globeReturn?: unknown } | null) || null;
+  const backToGlobe = () => {
+    navigate('/home', fromGlobeState?.from === 'globe' ? { state: { globeReturn: fromGlobeState.globeReturn } } : undefined);
+  };
 
   // Empty state: requested region exists but has no posts yet
   if (videos.length === 0) {
     return (
       <div className="bg-black flex flex-col items-center justify-center size-full text-center px-[32px] safe-top">
         <button
-          onClick={() => navigate('/home')}
+          onClick={backToGlobe}
           className="absolute top-[44px] left-[14px] bg-black/50 backdrop-blur rounded-full size-[38px] flex items-center justify-center"
         >
           <ArrowLeft className="size-[18px] text-white" />
@@ -391,7 +396,7 @@ export default function VideoReel() {
         <p className="font-['Inter:Regular',sans-serif] text-[13px] text-white/70 leading-[1.5] max-w-[280px]">
           Be the first to share something from this place.
         </p>
-        <button onClick={() => navigate('/home')} className="mt-[20px] bg-[#7e3f25] rounded-[48px] px-[24px] py-[12px]">
+        <button onClick={backToGlobe} className="mt-[20px] bg-[#7e3f25] rounded-[48px] px-[24px] py-[12px]">
           <p className="font-['Inter:Medium',sans-serif] text-[14px] text-white">Back to globe</p>
         </button>
       </div>
@@ -442,7 +447,7 @@ export default function VideoReel() {
           question={questions[active.questionKey] || questions[0]}
           currentRegion={region}
           onAnswer={() => navigate(`/daily-question?q=${active.questionKey}`)}
-          onBackToGlobe={() => navigate('/home')}
+          onBackToGlobe={backToGlobe}
           onExploreNearby={(nearbyRegion) => navigate(`/reel/${nearbyRegion}`)}
         />
       </div>
@@ -460,7 +465,7 @@ export default function VideoReel() {
             className="absolute left-0 right-0 pt-[4px] px-[14px] z-20 flex items-start gap-[8px] pointer-events-none safe-top"
           >
             <button
-              onClick={() => navigate('/home')}
+              onClick={backToGlobe}
               className="bg-black/50 backdrop-blur rounded-full size-[38px] flex items-center justify-center shrink-0 pointer-events-auto mt-[2px]"
             >
               <ArrowLeft className="size-[18px] text-white" />

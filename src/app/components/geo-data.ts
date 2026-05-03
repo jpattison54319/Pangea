@@ -23,7 +23,7 @@ export const US_STATES: Area[] = [
   { id: 'ohio', name: 'Ohio', lat: 40.3, lng: -82.7, bounds: [[38.4,-84.8],[41.9,-84.8],[41.9,-80.5],[38.4,-80.5]] },
   { id: 'iowa', name: 'Iowa', lat: 42.0, lng: -93.5, bounds: [[40.4,-96.6],[43.5,-96.6],[43.5,-90.1],[40.4,-90.1]] },
   { id: 'california', name: 'California', lat: 37, lng: -119, bounds: [[32.5,-124.4],[42,-124.4],[42,-114.1],[32.5,-114.1]] },
-  { id: 'new-york', name: 'New York', lat: 42.9, lng: -75.5, bounds: [[40.5,-79.8],[45,-79.8],[45,-71.9],[40.5,-71.9]] },
+  { id: 'ny', name: 'New York', lat: 42.9, lng: -75.5, bounds: [[40.5,-79.8],[45,-79.8],[45,-71.9],[40.5,-71.9]] },
   { id: 'missouri', name: 'Missouri', lat: 38.3, lng: -92.4, bounds: [[36,-95.8],[40.6,-95.8],[40.6,-89.1],[36,-89.1]] },
   { id: 'illinois', name: 'Illinois', lat: 40.6, lng: -89.4, bounds: [[37,-91.5],[42.5,-91.5],[42.5,-87.5],[37,-87.5]] },
 ];
@@ -42,7 +42,7 @@ export const CITIES: Record<string, Point[]> = {
   california: [
     { id: 'sf', name: 'San Francisco', lat: 37.77, lng: -122.42 },
   ],
-  'new-york': [
+  ny: [
     { id: 'nyc', name: 'New York City', lat: 40.71, lng: -74.01 },
   ],
   missouri: [
