@@ -6,11 +6,13 @@ import { useT, LANGUAGES } from './i18n';
 import {
   ChevronRight, User, Bell, Shield, Globe, Trash2, LogOut,
   Check, X, MessageCircle, UserPlus, Trophy, Calendar, Download,
-  Eye, ChevronDown,
+  Eye, ChevronDown, Compass,
 } from 'lucide-react';
 
 type NotifFreq = 'daily' | 'weekly' | 'minimal';
 type CommentAudience = 'everyone' | 'followers' | 'off';
+const POLICY_ICONS = ['🚫', '❌', '🤝', '🌍', '✅'];
+const POLICY_KEYS = ['policy_1', 'policy_2', 'policy_3', 'policy_4', 'policy_5'] as const;
 
 export default function SettingsSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const navigate = useNavigate();
@@ -18,7 +20,7 @@ export default function SettingsSheet({ open, onClose }: { open: boolean; onClos
   const t = useT();
 
   // Expanded sections
-  const [section, setSection] = useState<'main' | 'notif' | 'privacy' | 'lang'>('main');
+  const [section, setSection] = useState<'main' | 'notif' | 'privacy' | 'guidelines' | 'lang'>('main');
 
   // Notification settings
   const [notifDailyQ, setNotifDailyQ]       = useState(true);
@@ -173,6 +175,12 @@ export default function SettingsSheet({ open, onClose }: { open: boolean; onClos
                     <div className="bg-white rounded-[12px] overflow-hidden shadow-sm">
                       <Row icon={User} label={t('edit_profile')} />
                       <Row
+                        icon={Compass}
+                        label={t('take_tour')}
+                        sub={t('take_tour_sub')}
+                        onClick={() => { onClose(); navigate('/onboarding?source=settings&force=1'); }}
+                      />
+                      <Row
                         icon={Bell}
                         label={t('notifications')}
                         sub={t('notifications_sub')}
@@ -304,6 +312,18 @@ export default function SettingsSheet({ open, onClose }: { open: boolean; onClos
                     </div>
 
                     <div>
+                      <Label text={t('community_standards')} />
+                      <div className="bg-white rounded-[12px] overflow-hidden shadow-sm">
+                        <Row
+                          icon={Shield}
+                          label={t('community_standards')}
+                          sub={t('community_standards_body')}
+                          onClick={() => setSection('guidelines')}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
                       <Label text={t('your_data')} />
                       <div className="bg-white rounded-[12px] overflow-hidden shadow-sm">
                         <Row
@@ -319,6 +339,40 @@ export default function SettingsSheet({ open, onClose }: { open: boolean; onClos
                       </p>
                     </div>
 
+                  </div>
+                </motion.div>
+              )}
+
+              {/* ── Community Guidelines section ── */}
+              {section === 'guidelines' && (
+                <motion.div
+                  key="guidelines"
+                  initial={{ opacity: 0, x: 30 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 30 }}
+                  transition={{ duration: 0.2 }}
+                  className="flex flex-col flex-1 overflow-hidden"
+                >
+                  <SectionHeader title={t('community_standards')} onBack={() => setSection('privacy')} />
+                  <div className="flex-1 px-[16px] overflow-y-auto flex flex-col gap-[12px] pb-[28px]">
+                    <div className="rounded-[16px] px-[14px] py-[13px]" style={{ background: 'rgba(201,99,58,0.08)', border: '1px solid rgba(201,99,58,0.16)' }}>
+                      <p className="font-['Inter:Regular',sans-serif] text-[13px] text-[#6b6860] leading-[1.5]">
+                        {t('community_standards_body')}
+                      </p>
+                    </div>
+
+                    <div className="flex flex-col gap-[8px]">
+                      {POLICY_KEYS.map((key, i) => (
+                        <div key={key} className="bg-white rounded-[14px] px-[14px] py-[13px] flex items-center gap-[12px] shadow-sm">
+                          <span className="text-[22px] shrink-0">{POLICY_ICONS[i]}</span>
+                          <p className="font-['Inter:Regular',sans-serif] text-[13px] text-[#281e1b] leading-snug">{t(key)}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    <p className="font-['Inter:Regular',sans-serif] text-[11px] text-[#6b6860] px-[4px] leading-[1.5]">
+                      {t('agree_standards')}
+                    </p>
                   </div>
                 </motion.div>
               )}

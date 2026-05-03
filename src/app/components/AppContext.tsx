@@ -14,6 +14,27 @@ interface User {
   homeCountry: HomeCountry;
 }
 
+const SAVED_USER_KEY = 'pangea-current-user-v1';
+
+function loadSavedUser(): User | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const saved = window.localStorage.getItem(SAVED_USER_KEY);
+    return saved ? JSON.parse(saved) as User : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveUser(user: User | null) {
+  if (typeof window === 'undefined') return;
+  if (user) {
+    window.localStorage.setItem(SAVED_USER_KEY, JSON.stringify(user));
+  } else {
+    window.localStorage.removeItem(SAVED_USER_KEY);
+  }
+}
+
 export interface Comment {
   id: string;
   user: string;
@@ -172,8 +193,8 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [language, setLanguage] = useState<Lang>('en');
+  const [user, setUser] = useState<User | null>(() => loadSavedUser());
+  const [language, setLanguageState] = useState<Lang>(() => loadSavedUser()?.language ?? 'en');
   const [hasAnsweredToday, setHasAnsweredToday] = useState(false);
   const [likedVideos, setLikedVideos] = useState<Set<string>>(new Set());
   const [savedVideos, setSavedVideos] = useState<Set<string>>(new Set());
@@ -204,7 +225,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const likedVideosRef = useRef(new Set<string>());
   const unlockedRegionsRef = useRef(new Set<string>());
 
-  const login = (u: User) => { setUser(u); setLanguage(u.language); };
+  const login = (u: User) => { setUser(u); saveUser(u); setLanguage(u.language); };
   const SIGNIN_PERSONA: Record<HomeCountry, { displayName: string; handle: string; homeRegion: string }> = {
     usa:       { displayName: 'Jack Lalanne',    handle: 'jack.lalanne',    homeRegion: 'Kansas City, MO, USA' },
     guatemala: { displayName: 'Oscar Isaac',     handle: 'oscar.isaac',     homeRegion: 'Guatemala City, Guatemala' },
@@ -213,14 +234,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
   const signIn = (email: string, homeCountry: HomeCountry = 'usa') => {
     const p = SIGNIN_PERSONA[homeCountry];
-    setUser({
+    const signedInUser = {
       id: p.handle, handle: p.handle, displayName: p.displayName,
       homeRegion: p.homeRegion, streak: 7, countriesUnlocked: 3, language,
       homeCountry,
-    });
+    };
+    setUser(signedInUser);
+    saveUser(signedInUser);
   };
-  const logout = () => { setUser(null); setHasAnsweredToday(false); };
-  const bumpStreak = () => setUser(u => u ? { ...u, streak: u.streak + 1 } : u);
+  const logout = () => { setUser(null); saveUser(null); setHasAnsweredToday(false); };
+  const bumpStreak = () => setUser(u => {
+    if (!u) return u;
+    const next = { ...u, streak: u.streak + 1 };
+    saveUser(next);
+    return next;
+  });
 
   const addXP = (n: number) => {
     const oldLevel = calcLevel(xpRef.current);
@@ -304,6 +332,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const clearPendingLevelUp = () => setPendingLevelUp(null);
 
   const level = calcLevel(xp);
+  const setLanguage = (l: Lang) => {
+    setLanguageState(l);
+    setUser(u => {
+      if (!u) return u;
+      const next = { ...u, language: l };
+      saveUser(next);
+      return next;
+    });
+  };
 
   return (
     <AppContext.Provider value={{
