@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useApp } from './AppContext';
 import { useT } from './i18n';
 import { REGIONS, US_STATES, CITIES, COUNTRY_CITIES } from './geo-data';
-import { Search, User, Bell, ArrowLeft } from 'lucide-react';
+import { Search, User, Bell, ArrowLeft, X } from 'lucide-react';
 
 type Zoom = 'globe' | 'country' | 'state';
 type Pin = {
@@ -20,6 +20,7 @@ type GlobeReturnState = {
   zoom: Zoom;
   region: string | null;
   stateId: string | null;
+  pov?: { lat: number; lng: number; altitude: number };
 };
 type CountryFeature = {
   type: 'Feature';
@@ -44,7 +45,11 @@ const oceanMaterial = new MeshPhongMaterial({
   transparent: true,
 });
 
-function viewForGlobeState(zoom: Zoom, region: string | null, stateId: string | null) {
+function viewForGlobeState(zoom: Zoom, region: string | null, stateId: string | null, pov?: GlobeReturnState['pov']) {
+  if (pov && Number.isFinite(pov.lat) && Number.isFinite(pov.lng) && Number.isFinite(pov.altitude)) {
+    return pov;
+  }
+
   if (zoom === 'state') {
     const state = US_STATES.find(item => item.id === stateId);
     if (state) return { lat: state.lat, lng: state.lng, altitude: STATE_ALTITUDE };
@@ -112,6 +117,7 @@ export default function InteractiveHome() {
   const [stateId, setStateId] = useState<string | null>(restoredGlobe?.stateId || null);
   const [countries, setCountries] = useState<CountryFeature[]>([]);
   const [cameraAltitude, setCameraAltitude] = useState(DEFAULT_VIEW.altitude);
+  const [showStreakDetails, setShowStreakDetails] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -224,10 +230,15 @@ export default function InteractiveHome() {
   }, [moveCamera]);
 
   const onCityClick = useCallback((cityId: string) => {
+    const currentPov = globeRef.current?.pointOfView?.();
+    const pov = currentPov && typeof currentPov.lat === 'number' && typeof currentPov.lng === 'number' && typeof currentPov.altitude === 'number'
+      ? { lat: currentPov.lat, lng: currentPov.lng, altitude: currentPov.altitude }
+      : viewForGlobeState(zoom, region, stateId);
+
     navigate(`/reel/${cityId}`, {
       state: {
         from: 'globe',
-        globeReturn: { zoom, region, stateId },
+        globeReturn: { zoom, region, stateId, pov },
       },
     });
   }, [navigate, region, stateId, zoom]);
@@ -276,9 +287,10 @@ export default function InteractiveHome() {
   const answeredToday = isAuthenticated && hasAnsweredToday;
 
   return (
-    <div className="bg-[#fff2ed] flex flex-col relative size-full overflow-hidden">
+    <div className="pangea-home-shell flex flex-col relative size-full overflow-hidden">
+      <div className="pangea-home-backdrop" aria-hidden="true" />
 
-      <div className="px-[20px] pb-[4px] safe-top shrink-0 flex items-center gap-[8px]">
+      <div className="relative z-10 px-[20px] pb-[4px] safe-top shrink-0 flex items-center gap-[8px]">
         {zoom !== 'globe' && (
           <button onClick={zoomOut} className="size-[32px] rounded-full bg-white shadow-sm flex items-center justify-center shrink-0">
             <ArrowLeft className="size-[16px] text-[#281e1b]" />
@@ -296,22 +308,26 @@ export default function InteractiveHome() {
           const streak = user?.streak || 0;
           const onFire = streak > 1;
           return (
-            <div className={`flex items-center gap-[5px] rounded-full px-[10px] py-[5px] shrink-0 ${onFire ? 'bg-[#C9633A]' : 'bg-[#cfe3ea]'}`}>
+            <button
+              onClick={() => setShowStreakDetails(true)}
+              className={`min-h-[44px] rounded-full px-[12px] flex items-center gap-[6px] shrink-0 ${onFire ? 'bg-[#C9633A]' : 'bg-[#cfe3ea]'}`}
+              aria-label={`View ${streak} day streak details`}
+            >
               <p className="text-[14px] leading-none">{onFire ? '🔥' : '🧊'}</p>
               <p className={`font-['Fraunces:Bold',sans-serif] text-[13px] leading-none ${onFire ? 'text-white' : 'text-[#1F6B6B]'}`}>
                 {streak}
               </p>
-            </div>
+            </button>
           );
         })()}
         {isAuthenticated && zoom === 'globe' && (
-          <button onClick={() => navigate('/notifications')} className="ml-[10px] shrink-0">
+          <button onClick={() => navigate('/notifications')} className="ml-[6px] shrink-0 size-[44px] rounded-full flex items-center justify-center" aria-label="Notifications">
             <Bell className="size-[20px] text-[#281e1b]" />
           </button>
         )}
       </div>
 
-      <div ref={globeAreaRef} className="flex-1 flex items-center justify-center relative overflow-hidden">
+      <div ref={globeAreaRef} className="relative z-10 flex-1 flex items-center justify-center overflow-hidden">
         <div
           className="relative rounded-full"
           style={{
@@ -346,7 +362,7 @@ export default function InteractiveHome() {
             htmlElement={createMarkerElement}
             htmlTransitionDuration={250}
             onGlobeReady={() => {
-              const view = viewForGlobeState(zoom, region, stateId);
+              const view = viewForGlobeState(zoom, region, stateId, restoredGlobe?.pov);
               globeRef.current?.pointOfView(view, 0);
               cameraAltitudeRef.current = view.altitude;
               setCameraAltitude(view.altitude);
@@ -368,7 +384,7 @@ export default function InteractiveHome() {
         </div>
       </div>
 
-      <div className="px-[20px] pb-[12px] shrink-0 flex items-center gap-[10px]">
+      <div className="relative z-10 px-[20px] pb-[12px] shrink-0 flex items-center gap-[10px]">
         <button
           onClick={() => navigate(isAuthenticated ? '/daily-question' : '/sign-in')}
           className="flex-1 bg-[#7e3f25] rounded-full px-[16px] py-[10px] shadow-[0px_4px_12px_-2px_rgba(126,63,37,0.4)]"
@@ -379,7 +395,7 @@ export default function InteractiveHome() {
         </button>
       </div>
 
-      <div className="h-[60px] bg-white shadow-[0px_-4px_16px_0px_rgba(0,0,0,0.08)] flex items-center justify-around shrink-0">
+      <div className="relative z-10 h-[60px] bg-white shadow-[0px_-4px_16px_0px_rgba(0,0,0,0.08)] flex items-center justify-around shrink-0">
         <button onClick={resetGlobe} className="flex flex-col items-center gap-[2px]">
           <div className="size-[22px] flex items-center justify-center text-[18px]">🌍</div>
           <p className="font-['DM_Sans:Bold',sans-serif] text-[10px] text-[#7e3f25]">{t('globe')}</p>
@@ -393,6 +409,41 @@ export default function InteractiveHome() {
           <p className="font-['DM_Sans:Bold',sans-serif] text-[10px] text-[rgba(0,0,0,0.5)]">{t('profile')}</p>
         </button>
       </div>
+
+      {showStreakDetails && (
+        <div className="absolute inset-0 z-40 bg-black/45 flex items-end" onClick={() => setShowStreakDetails(false)}>
+          <div className="bg-white rounded-t-[24px] w-full p-[22px] pb-[28px]" onClick={event => event.stopPropagation()}>
+            <div className="flex items-start justify-between gap-[12px] mb-[14px]">
+              <div>
+                <p className="font-['Inter:Medium',sans-serif] text-[11px] uppercase tracking-[0.16em] text-[#7e3f25] mb-[4px]">
+                  Streak
+                </p>
+                <h3 className="font-['Fraunces:Regular',sans-serif] text-[22px] text-[#281e1b]" style={{ fontVariationSettings: "'SOFT' 0, 'WONK' 1" }}>
+                  {user?.streak || 0} day streak
+                </h3>
+              </div>
+              <button onClick={() => setShowStreakDetails(false)} className="size-[44px] rounded-full bg-[#fff2ed] flex items-center justify-center" aria-label="Close streak details">
+                <X className="size-[20px] text-[#6b6860]" />
+              </button>
+            </div>
+            <div className="rounded-[16px] bg-[#fff2ed] px-[16px] py-[15px]">
+              <div className="flex items-center gap-[10px] mb-[8px]">
+                <span className="text-[24px]">{(user?.streak || 0) > 1 ? '🔥' : '🧊'}</span>
+                <p className="font-['Fraunces:Bold',sans-serif] text-[28px] text-[#c9633a] leading-none">{user?.streak || 0}</p>
+              </div>
+              <p className="font-['Inter:Regular',sans-serif] text-[13px] text-[#6b6860] leading-[1.45]">
+                Answer a daily prompt to keep your streak alive. Your streak grows when you share or answer at least one prompt each day.
+              </p>
+              <button
+                onClick={() => navigate(isAuthenticated ? '/daily-question' : '/sign-in')}
+                className="mt-[14px] min-h-[44px] w-full rounded-full bg-[#7e3f25] px-[18px]"
+              >
+                <p className="font-['Domine:Regular',sans-serif] text-[14px] text-white">{answeredToday ? t('answer_more_cta') : t('answer_question')}</p>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

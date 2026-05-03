@@ -8,6 +8,15 @@ import { ImageWithFallback } from './figma/ImageWithFallback';
 
 import { MOCK, searchVideos, type Vid } from './videos';
 
+const LANGUAGE_NAMES: Record<string, string> = {
+  en: 'English',
+  es: 'Spanish',
+  kj: 'Oshiwambo',
+  pt: 'Portuguese',
+  fr: 'French',
+  ja: 'Japanese',
+};
+
 const CAPTIONS: Record<string, string[]> = {
   en: [
     'You have to hit Flipside and order the PBJ Burger!',
@@ -372,9 +381,24 @@ export default function VideoReel() {
     astana: 'kazakhstan',
   };
   const globeRegion = region ? (CITY_TO_COUNTRY[region] ?? region) : null;
-  const fromGlobeState = (location.state as { from?: string; globeReturn?: unknown } | null) || null;
-  const backToGlobe = () => {
-    navigate('/home', fromGlobeState?.from === 'globe' ? { state: { globeReturn: fromGlobeState.globeReturn } } : undefined);
+  const returnState = (location.state as { from?: string; globeReturn?: unknown; searchReturn?: unknown } | null) || null;
+  const backToPreviousSource = () => {
+    if (returnState?.from === 'globe') {
+      navigate('/home', { state: { globeReturn: returnState.globeReturn } });
+      return;
+    }
+
+    if (returnState?.from === 'search') {
+      navigate('/search', { state: { searchReturn: returnState.searchReturn } });
+      return;
+    }
+
+    if (window.history.length > 1) {
+      navigate(-1);
+      return;
+    }
+
+    navigate('/home');
   };
 
   // Empty state: requested region exists but has no posts yet
@@ -382,7 +406,7 @@ export default function VideoReel() {
     return (
       <div className="bg-black flex flex-col items-center justify-center size-full text-center px-[32px] safe-top">
         <button
-          onClick={backToGlobe}
+          onClick={backToPreviousSource}
           className="absolute top-[44px] left-[14px] bg-black/50 backdrop-blur rounded-full size-[38px] flex items-center justify-center"
         >
           <ArrowLeft className="size-[18px] text-white" />
@@ -396,7 +420,7 @@ export default function VideoReel() {
         <p className="font-['Inter:Regular',sans-serif] text-[13px] text-white/70 leading-[1.5] max-w-[280px]">
           Be the first to share something from this place.
         </p>
-        <button onClick={backToGlobe} className="mt-[20px] bg-[#7e3f25] rounded-[48px] px-[24px] py-[12px]">
+        <button onClick={backToPreviousSource} className="mt-[20px] bg-[#7e3f25] rounded-[48px] px-[24px] py-[12px]">
           <p className="font-['Inter:Medium',sans-serif] text-[14px] text-white">Back to globe</p>
         </button>
       </div>
@@ -440,6 +464,7 @@ export default function VideoReel() {
             caption={captions[v.captionKey] || captions[0]}
             question={questions[v.questionKey] || questions[0]}
             active={i === idx}
+            language={language}
           />
         ))}
         <EndSlide
@@ -447,8 +472,8 @@ export default function VideoReel() {
           question={questions[active.questionKey] || questions[0]}
           currentRegion={region}
           onAnswer={() => navigate(`/daily-question?q=${active.questionKey}`)}
-          onBackToGlobe={backToGlobe}
-          onExploreNearby={(nearbyRegion) => navigate(`/reel/${nearbyRegion}`)}
+          onBackToGlobe={backToPreviousSource}
+          onExploreNearby={(nearbyRegion) => navigate(`/reel/${nearbyRegion}`, { state: location.state })}
         />
       </div>
 
@@ -465,7 +490,7 @@ export default function VideoReel() {
             className="absolute left-0 right-0 pt-[4px] px-[14px] z-20 flex items-start gap-[8px] pointer-events-none safe-top"
           >
             <button
-              onClick={backToGlobe}
+              onClick={backToPreviousSource}
               className="bg-black/50 backdrop-blur rounded-full size-[38px] flex items-center justify-center shrink-0 pointer-events-auto mt-[2px]"
             >
               <ArrowLeft className="size-[18px] text-white" />
@@ -610,18 +635,23 @@ export default function VideoReel() {
                     key={reason}
                     onClick={() => {
                       setReportReason(reason);
+                      reportVideo(active.id);
                       setReportStage('reviewing');
                       setTimeout(() => {
-                        // Sentinel makes its determination — only the crypto-spam demo post
-                        // is found to violate guidelines; everything else is cleared.
-                        setReportStage(active.id === 'v-mod1' ? 'removed' : 'cleared');
-                      }, 2200);
+                        setReportStage('removed');
+                      }, 900);
                     }}
                     className="w-full text-left rounded-[12px] px-[14px] py-[12px] mb-[8px] bg-[#fff2ed] hover:bg-[#fde3d6] transition-colors"
                   >
                     <p className="font-['Inter:Medium',sans-serif] text-[14px] text-[#281e1b]">{reason}</p>
                   </button>
                 ))}
+                <div className="mt-[8px] rounded-[14px] bg-[#f7f3ee] px-[13px] py-[11px] border border-black/[0.06]">
+                  <p className="font-['Inter:Medium',sans-serif] text-[12px] text-[#281e1b] mb-[3px]">How reports are handled</p>
+                  <p className="font-['Inter:Regular',sans-serif] text-[12px] text-[#6b6860] leading-[1.45]">
+                    We hide reported posts from your feed right away. Automated checks help prioritize reports, and account-impacting decisions may be reviewed by moderators.
+                  </p>
+                </div>
               </>
             )}
 
@@ -635,13 +665,13 @@ export default function VideoReel() {
                   <Loader2 className="size-[28px] text-[#7e3f25]" />
                 </motion.div>
                 <p className="font-['Inter:Medium',sans-serif] text-[11px] uppercase tracking-[0.18em] mb-[6px]" style={{ color: '#7e3f25' }}>
-                  Sentinel
+                  Report received
                 </p>
                 <h3 className="font-['Fraunces:Regular',sans-serif] text-[20px] text-[#281e1b] mb-[8px] leading-[1.25]" style={{ fontVariationSettings: "'SOFT' 0, 'WONK' 1" }}>
-                  Analyzing this report
+                  Hiding this post from your feed
                 </h3>
                 <p className="font-['Inter:Regular',sans-serif] text-[13px] text-[#6b6860] leading-[1.5] max-w-[280px]">
-                  Cross-referencing the post against Pangea's community guidelines and global cultural-respect framework.
+                  Thanks for flagging it. Automated checks help prioritize reports for the safety team.
                 </p>
               </div>
             )}
@@ -657,20 +687,18 @@ export default function VideoReel() {
                   <ShieldCheck className="size-[34px] text-white" />
                 </motion.div>
                 <p className="font-['Inter:Medium',sans-serif] text-[11px] uppercase tracking-[0.18em] mb-[6px]" style={{ color: '#1F6B6B' }}>
-                  Verified by Sentinel
+                  Report received
                 </p>
                 <h3 className="font-['Fraunces:Regular',sans-serif] text-[20px] text-[#281e1b] mb-[10px] leading-[1.25]" style={{ fontVariationSettings: "'SOFT' 0, 'WONK' 1" }}>
-                  This post has been removed
+                  Hidden from your feed
                 </h3>
                 <p className="font-['Inter:Regular',sans-serif] text-[13px] text-[#6b6860] leading-[1.55] mb-[18px] max-w-[300px]">
-                  Sentinel reviewed the content against our community guidelines and confirmed a violation
-                  {reportReason ? ` (${reportReason.toLowerCase()})` : ''}. The post is gone, the creator has been notified, and a strike has been added to their account. Thanks for helping keep Pangea welcoming.
+                  We logged your report{reportReason ? ` for ${reportReason.toLowerCase()}` : ''}. Automated checks help prioritize reports, and account-impacting decisions may be reviewed by moderators.
                 </p>
                 <button
                   onClick={() => {
-                    reportVideo(active.id);
                     setShowReport(false);
-                    showToast('Thanks — Sentinel removed the post.');
+                    showToast('Report received. Hidden from your feed.');
                   }}
                   className="bg-[#7e3f25] rounded-[48px] w-full py-[13px]"
                 >
@@ -691,14 +719,14 @@ export default function VideoReel() {
                   <ShieldCheck className="size-[34px] text-white" />
                 </motion.div>
                 <p className="font-['Inter:Medium',sans-serif] text-[11px] uppercase tracking-[0.18em] mb-[6px]" style={{ color: '#4a7a7a' }}>
-                  Reviewed by Sentinel
+                  Report received
                 </p>
                 <h3 className="font-['Fraunces:Regular',sans-serif] text-[20px] text-[#281e1b] mb-[10px] leading-[1.25]" style={{ fontVariationSettings: "'SOFT' 0, 'WONK' 1" }}>
-                  Content was analyzed and found to NOT be against our guidelines
+                  Hidden from your feed
                 </h3>
                 <p className="font-['Inter:Regular',sans-serif] text-[13px] text-[#6b6860] leading-[1.55] mb-[18px] max-w-[300px]">
-                  Sentinel carefully checked this post against our community guidelines and global cultural-respect framework
-                  {reportReason ? ` (you flagged it for "${reportReason.toLowerCase()}")` : ''}. The post will stay up. Thanks for looking out for the community — we know reporting takes effort.
+                  We logged your report and hid the post from your feed.
+                  Automated checks help prioritize reports, and account-impacting decisions may be reviewed by moderators.
                 </p>
                 <button
                   onClick={() => {
@@ -936,8 +964,9 @@ function EndSlide({
   );
 }
 
-function Slide({ v, caption, question, active }: { v: Vid; caption: string; question: string; active: boolean }) {
+function Slide({ v, caption, question, active, language }: { v: Vid; caption: string; question: string; active: boolean; language: string }) {
   const navigate = useNavigate();
+  const translatedTo = LANGUAGE_NAMES[language] || 'English';
   return (
     <div className="relative w-full h-full snap-start snap-always shrink-0" style={{ scrollSnapAlign: 'start' }}>
       {/* Background by kind */}
@@ -1009,7 +1038,13 @@ function Slide({ v, caption, question, active }: { v: Vid; caption: string; ques
           <p className="font-['Inter:Regular',sans-serif] text-[12px] text-white/80">{v.location}</p>
         </button>
         {v.kind !== 'text' && (
-          <p className="font-['Inter:Regular',sans-serif] text-[13px] text-white mt-[8px] leading-[1.4]">{caption}</p>
+          <div className="mt-[8px]">
+            <div className="inline-flex items-center gap-[6px] rounded-full bg-black/45 backdrop-blur px-[8px] py-[4px] mb-[6px]">
+              <span className="font-['Inter:Bold',sans-serif] text-[10px] text-white">CC</span>
+              <span className="font-['Inter:Medium',sans-serif] text-[10px] text-white/85">Auto-captioned · Translated to {translatedTo}</span>
+            </div>
+            <p className="font-['Inter:Regular',sans-serif] text-[13px] text-white leading-[1.4]">{caption}</p>
+          </div>
         )}
       </div>
 

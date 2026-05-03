@@ -4,6 +4,7 @@ import { useApp, HomeCountry } from './AppContext';
 import { useT, LANGUAGES, Lang } from './i18n';
 import { Check, ChevronRight, Shield, AlertCircle, Search } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { hasSeenTourOffer } from './tour-state';
 
 // ── World countries list ───────────────────────────────────────────────────────
 const WORLD_COUNTRIES: { name: string; flag: string }[] = [
@@ -190,7 +191,7 @@ export default function EnhancedCreateAccount() {
       language:        chosenLang,
       homeCountry:     country!,
     });
-    navigate('/onboarding');
+    navigate(hasSeenTourOffer() ? '/home' : '/onboarding?source=signup');
   };
 
   // ── Age-denied gate ──────────────────────────────────────────────────────────

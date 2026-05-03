@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { useApp, TROPHIES, WEEKLY_MISSIONS, calcLevel, xpInCurrentLevel, XP_PER_LEVEL } from './AppContext';
-import { Settings, MapPin, Flame, Globe as GlobeIcon, Home, Search as SearchIcon, User, Star, Lock, Users, MessageSquare, BookOpen } from 'lucide-react';
+import { Settings, MapPin, Flame, Globe as GlobeIcon, Home, Search as SearchIcon, User, Star, Lock, Users, MessageSquare, BookOpen, ChevronRight, X } from 'lucide-react';
 import { useT } from './i18n';
 import SettingsSheet from './SettingsScreen';
 import { motion, AnimatePresence } from 'motion/react';
 import { MOCK } from './videos';
 
 type Tab = 'posts' | 'favorites' | 'saved' | 'trophies';
+type DetailSheet = 'streak' | 'countries';
 
 const MOCK_POSTS = [
   { id: '1', emoji: '🍔', views: 1234 },
@@ -29,6 +30,7 @@ export default function ProfileScreen() {
   const isNamibia = user?.homeCountry === 'namibia';
   const t = useT();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [detailSheet, setDetailSheet] = useState<DetailSheet | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>('posts');
   const [expandedTrophy, setExpandedTrophy] = useState<string | null>(null);
 
@@ -75,8 +77,8 @@ export default function ProfileScreen() {
     <div className="bg-[#fff2ed] flex flex-col relative size-full overflow-hidden safe-top">
 
       {isOwn && (
-        <div className="h-[32px] flex items-center justify-end px-[20px] shrink-0">
-          <button onClick={() => setSettingsOpen(true)}>
+        <div className="h-[44px] flex items-center justify-end px-[20px] shrink-0">
+          <button onClick={() => setSettingsOpen(true)} className="size-[44px] rounded-full flex items-center justify-center">
             <Settings className="size-[20px] text-[#281e1b]" />
           </button>
         </div>
@@ -179,51 +181,56 @@ export default function ProfileScreen() {
           {isNamibia ? (
             /* Namibia stats: streak + trophies (community recognition) */
             <>
-              <div className="flex-1 bg-white rounded-[12px] px-[10px] py-[9px] flex items-center gap-[7px]">
+              <button onClick={() => setDetailSheet('streak')} className="flex-1 min-h-[48px] bg-white rounded-[12px] px-[10px] py-[9px] flex items-center gap-[7px] text-left">
                 <Flame className="size-[17px] text-[#C9633A] fill-[#C9633A]" />
-                <div>
+                <div className="flex-1 min-w-0">
                   <p className="font-['Fraunces:Bold',sans-serif] text-[17px] text-[#c9633a] leading-[1]">{profile.streak}</p>
                   <p className="font-['Inter:Regular',sans-serif] text-[10px] text-[#6b6860]">{t('day_streak_label')}</p>
                 </div>
-              </div>
-              <div className="flex-1 bg-white rounded-[12px] px-[10px] py-[9px] flex items-center gap-[7px]">
+                <ChevronRight className="size-[13px] text-[#6b6860]" />
+              </button>
+              <button onClick={() => setActiveTab('trophies')} className="flex-1 min-h-[48px] bg-white rounded-[12px] px-[10px] py-[9px] flex items-center gap-[7px] text-left">
                 <span className="text-[17px]">🤝</span>
-                <div>
+                <div className="flex-1 min-w-0">
                   <p className="font-['Fraunces:Bold',sans-serif] text-[17px] text-[#1F6B6B] leading-[1]">{earnedTrophies.size}</p>
                   <p className="font-['Inter:Regular',sans-serif] text-[10px] text-[#6b6860]">{t('honours')}</p>
                 </div>
-              </div>
+                <ChevronRight className="size-[13px] text-[#6b6860]" />
+              </button>
             </>
           ) : (
             /* USA / Guatemala / Other stats */
             <>
-              <div className="flex-1 bg-white rounded-[12px] px-[10px] py-[9px] flex items-center gap-[7px]">
+              <button onClick={() => setDetailSheet('streak')} className="flex-1 min-h-[48px] bg-white rounded-[12px] px-[10px] py-[9px] flex items-center gap-[7px] text-left">
                 <Flame className="size-[17px] text-[#C9633A] fill-[#C9633A]" />
-                <div>
+                <div className="flex-1 min-w-0">
                   <p className="font-['Fraunces:Bold',sans-serif] text-[17px] text-[#c9633a] leading-[1]">{profile.streak}</p>
                   <p className="font-['Inter:Regular',sans-serif] text-[10px] text-[#6b6860]">{t('streak')}</p>
                 </div>
-              </div>
-              <div className="flex-1 bg-white rounded-[12px] px-[10px] py-[9px] flex items-center gap-[7px]">
+                <ChevronRight className="size-[13px] text-[#6b6860]" />
+              </button>
+              <button onClick={() => setDetailSheet('countries')} className="flex-1 min-h-[48px] bg-white rounded-[12px] px-[10px] py-[9px] flex items-center gap-[7px] text-left">
                 <GlobeIcon className="size-[17px] text-[#1F6B6B]" />
-                <div>
+                <div className="flex-1 min-w-0">
                   <p className="font-['Fraunces:Bold',sans-serif] text-[17px] text-[#1F6B6B] leading-[1]">{profile.countries}</p>
                   <p className="font-['Inter:Regular',sans-serif] text-[10px] text-[#6b6860]">{t('countries')}</p>
                 </div>
-              </div>
-              <div className="flex-1 bg-white rounded-[12px] px-[10px] py-[9px] flex items-center gap-[7px]">
+                <ChevronRight className="size-[13px] text-[#6b6860]" />
+              </button>
+              <button onClick={() => setActiveTab('trophies')} className="flex-1 min-h-[48px] bg-white rounded-[12px] px-[10px] py-[9px] flex items-center gap-[7px] text-left">
                 <span className="text-[17px]">🏆</span>
-                <div>
+                <div className="flex-1 min-w-0">
                   <p className="font-['Fraunces:Bold',sans-serif] text-[17px] text-[#E8B04B] leading-[1]">{earnedTrophies.size}</p>
                   <p className="font-['Inter:Regular',sans-serif] text-[10px] text-[#6b6860]">{t('trophies')}</p>
                 </div>
-              </div>
+                <ChevronRight className="size-[13px] text-[#6b6860]" />
+              </button>
             </>
           )}
         </div>
 
         {!isOwn && (
-          <button className="bg-[#7e3f25] rounded-[48px] w-full py-[10px] mt-[10px]">
+          <button className="bg-[#7e3f25] rounded-[48px] w-full min-h-[44px] py-[10px] mt-[10px]">
             <p className="font-['Domine:Regular',sans-serif] text-[14px] text-white">{t('follow')}</p>
           </button>
         )}
@@ -235,7 +242,7 @@ export default function ProfileScreen() {
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className="flex-1 flex flex-col items-center pt-[10px] pb-[10px] relative"
+            className="flex-1 min-h-[44px] flex flex-col items-center justify-center relative"
           >
             <p className={`font-['Inter:Medium',sans-serif] text-[11px] transition-colors ${activeTab === tab ? 'text-[#7e3f25]' : 'text-[#6b6860]'}`}>
               {tab === 'posts' ? t('posts_tab') : tab === 'favorites' ? t('liked_tab') : tab === 'saved' ? t('saved_tab') : t('trophies_tab')}
@@ -303,7 +310,7 @@ export default function ProfileScreen() {
                 <p className="text-[44px] mb-[14px]">❤️</p>
                 <h3 className="font-['Fraunces:Regular',sans-serif] text-[19px] text-[#281e1b] mb-[6px]" style={{ fontVariationSettings: "'SOFT' 0, 'WONK' 1" }}>{t('no_favorites')}</h3>
                 <p className="font-['Inter:Regular',sans-serif] text-[13px] text-[#6b6860]">{t('no_favorites_body')}</p>
-                <button onClick={() => navigate('/home')} className="mt-[20px] bg-[#7e3f25] rounded-[48px] px-[24px] py-[11px]">
+                <button onClick={() => navigate('/home')} className="mt-[20px] bg-[#7e3f25] rounded-[48px] px-[24px] min-h-[44px] py-[11px]">
                   <p className="font-['Domine:Regular',sans-serif] text-[14px] text-white">{t('explore_globe')}</p>
                 </button>
               </div>
@@ -337,7 +344,7 @@ export default function ProfileScreen() {
                 <p className="text-[44px] mb-[14px]">🔖</p>
                 <h3 className="font-['Fraunces:Regular',sans-serif] text-[19px] text-[#281e1b] mb-[6px]" style={{ fontVariationSettings: "'SOFT' 0, 'WONK' 1" }}>{t('no_saved')}</h3>
                 <p className="font-['Inter:Regular',sans-serif] text-[13px] text-[#6b6860]">{t('no_saved_body')}</p>
-                <button onClick={() => navigate('/home')} className="mt-[20px] bg-[#7e3f25] rounded-[48px] px-[24px] py-[11px]">
+                <button onClick={() => navigate('/home')} className="mt-[20px] bg-[#7e3f25] rounded-[48px] px-[24px] min-h-[44px] py-[11px]">
                   <p className="font-['Domine:Regular',sans-serif] text-[14px] text-white">{t('explore_globe')}</p>
                 </button>
               </div>
@@ -451,6 +458,13 @@ export default function ProfileScreen() {
       </AnimatePresence>
 
       <BottomNav navigate={navigate} t={t} />
+      <ProfileDetailSheet
+        detail={detailSheet}
+        onClose={() => setDetailSheet(null)}
+        profile={profile}
+        unlockedRegions={unlockedRegions}
+        t={t}
+      />
       <SettingsSheet open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </div>
   );
@@ -459,18 +473,105 @@ export default function ProfileScreen() {
 function BottomNav({ navigate, t }: { navigate: (p: string) => void; t: (k: string) => string }) {
   return (
     <div className="h-[60px] bg-white shadow-[0px_-4px_16px_0px_rgba(0,0,0,0.08)] flex items-center justify-around shrink-0">
-      <button onClick={() => navigate('/home')} className="flex flex-col items-center gap-[2px]">
+      <button onClick={() => navigate('/home')} className="min-h-[44px] min-w-[64px] flex flex-col items-center justify-center gap-[2px]">
         <Home className="size-[22px] text-[rgba(0,0,0,0.5)]" />
         <p className="font-['DM_Sans:Bold',sans-serif] text-[10px] text-[rgba(0,0,0,0.5)]">{t('globe')}</p>
       </button>
-      <button onClick={() => navigate('/search')} className="flex flex-col items-center gap-[2px]">
+      <button onClick={() => navigate('/search')} className="min-h-[44px] min-w-[64px] flex flex-col items-center justify-center gap-[2px]">
         <SearchIcon className="size-[22px] text-[rgba(0,0,0,0.5)]" />
         <p className="font-['DM_Sans:Bold',sans-serif] text-[10px] text-[rgba(0,0,0,0.5)]">{t('search')}</p>
       </button>
-      <button className="flex flex-col items-center gap-[2px]">
+      <button className="min-h-[44px] min-w-[64px] flex flex-col items-center justify-center gap-[2px]">
         <User className="size-[22px] text-[#7e3f25]" />
         <p className="font-['DM_Sans:Bold',sans-serif] text-[10px] text-[#7e3f25]">{t('profile')}</p>
       </button>
     </div>
+  );
+}
+
+function ProfileDetailSheet({
+  detail,
+  onClose,
+  profile,
+  unlockedRegions,
+  t,
+}: {
+  detail: DetailSheet | null;
+  onClose: () => void;
+  profile: { displayName: string; streak: number; countries: number };
+  unlockedRegions: Set<string>;
+  t: (k: string) => string;
+}) {
+  const regionNames = [...unlockedRegions].map(region =>
+    region
+      .split('-')
+      .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(' ')
+  );
+
+  return (
+    <AnimatePresence>
+      {detail && (
+        <motion.div
+          className="absolute inset-0 bg-black/45 z-40 flex items-end"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={onClose}
+        >
+          <motion.div
+            className="bg-white rounded-t-[24px] w-full p-[22px] pb-[28px]"
+            initial={{ y: 260 }}
+            animate={{ y: 0 }}
+            exit={{ y: 260 }}
+            transition={{ type: 'spring', damping: 24, stiffness: 260 }}
+            onClick={event => event.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-[12px] mb-[14px]">
+              <div>
+                <p className="font-['Inter:Medium',sans-serif] text-[11px] uppercase tracking-[0.16em] text-[#7e3f25] mb-[4px]">
+                  Tap for details
+                </p>
+                <h3 className="font-['Fraunces:Regular',sans-serif] text-[22px] text-[#281e1b]" style={{ fontVariationSettings: "'SOFT' 0, 'WONK' 1" }}>
+                  {detail === 'streak' ? t('streak') : t('countries')}
+                </h3>
+              </div>
+              <button onClick={onClose} className="size-[44px] rounded-full bg-[#fff2ed] flex items-center justify-center">
+                <X className="size-[20px] text-[#6b6860]" />
+              </button>
+            </div>
+
+            {detail === 'streak' ? (
+              <div className="rounded-[16px] bg-[#fff2ed] px-[16px] py-[15px]">
+                <div className="flex items-center gap-[10px] mb-[8px]">
+                  <Flame className="size-[22px] text-[#C9633A] fill-[#C9633A]" />
+                  <p className="font-['Fraunces:Bold',sans-serif] text-[28px] text-[#c9633a] leading-none">{profile.streak}</p>
+                </div>
+                <p className="font-['Inter:Regular',sans-serif] text-[13px] text-[#6b6860] leading-[1.45]">
+                  {profile.displayName} has a {profile.streak}-day streak. Answer a daily prompt to keep it alive and build momentum.
+                </p>
+              </div>
+            ) : (
+              <div className="rounded-[16px] bg-[#fff2ed] px-[16px] py-[15px]">
+                <div className="flex items-center gap-[10px] mb-[10px]">
+                  <GlobeIcon className="size-[22px] text-[#1F6B6B]" />
+                  <p className="font-['Fraunces:Bold',sans-serif] text-[28px] text-[#1F6B6B] leading-none">{profile.countries}</p>
+                </div>
+                <p className="font-['Inter:Regular',sans-serif] text-[13px] text-[#6b6860] leading-[1.45] mb-[12px]">
+                  Places with stories this profile has opened or visited.
+                </p>
+                <div className="flex flex-wrap gap-[8px]">
+                  {(regionNames.length ? regionNames : ['Explore the globe to unlock places']).map(region => (
+                    <span key={region} className="rounded-full bg-white px-[10px] py-[6px] font-['Inter:Medium',sans-serif] text-[12px] text-[#281e1b]">
+                      {region}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }

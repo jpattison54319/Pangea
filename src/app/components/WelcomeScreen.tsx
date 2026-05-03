@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router';
 import { motion } from 'motion/react';
 import { useT, LANGUAGES } from './i18n';
 import { useApp } from './AppContext';
+import { hasSeenTourOffer } from './tour-state';
 
 export default function WelcomeScreen() {
   const navigate = useNavigate();
@@ -64,7 +65,7 @@ export default function WelcomeScreen() {
         >
           <p className="font-['Domine:Regular',sans-serif] text-[16px] text-[#7e3f25] text-center">{t('sign_in')}</p>
         </button>
-        <button onClick={() => navigate('/home')} className="w-full py-[8px]">
+        <button onClick={() => navigate(hasSeenTourOffer() ? '/home' : '/onboarding?source=guest')} className="w-full py-[8px]">
           <p className="font-['Inter:Medium',sans-serif] text-[13px] text-[#6b6860] text-center underline">
             {t('explore_guest')}
           </p>
